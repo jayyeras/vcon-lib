@@ -165,6 +165,9 @@ class TestDialog:
         assert dialog_dict["party_history"] == [
             {"party": 1, "event": "join", "time": party_time}
         ]
+        assert dialog_dict["party_history"] == [
+            {"party": 1, "event": "join", "time": party_time}
+        ]
 
     # Test the meta variable in the dialog
     def test_meta_variable_in_dialog(self):
