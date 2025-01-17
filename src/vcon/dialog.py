@@ -20,31 +20,34 @@ MIME_TYPES = [
 
 
 class Dialog:
-    def __init__(self,
-                 type: str,
-                 start: Union[datetime, str],
-                 parties: List[int],
-                 originator: Optional[int] = None,
-                 mimetype: Optional[str] = None,
-                 filename: Optional[str] = None,
-                 body: Optional[str] = None,
-                 encoding: Optional[str] = None,
-                 url: Optional[str] = None,
-                 alg: Optional[str] = None,
-                 signature: Optional[str] = None,
-                 disposition: Optional[str] = None,
-                 party_history: Optional[List[PartyHistory]] = None,
-                 transferee: Optional[int] = None,
-                 transferor: Optional[int] = None,
-                 transfer_target: Optional[int] = None,
-                 original: Optional[int] = None,
-                 consultation: Optional[int] = None,
-                 target_dialog: Optional[int] = None,
-                 campaign: Optional[str] = None,
-                 interaction: Optional[str] = None,
-                 skill: Optional[str] = None,
-                 duration: Optional[float] = None,
-                 meta: Optional[dict] = None) -> None:
+    def __init__(
+        self,
+        type: str,
+        start: Union[datetime, str],
+        parties: List[int],
+        originator: Optional[int] = None,
+        mimetype: Optional[str] = None,
+        filename: Optional[str] = None,
+        body: Optional[str] = None,
+        encoding: Optional[str] = None,
+        url: Optional[str] = None,
+        alg: Optional[str] = None,
+        signature: Optional[str] = None,
+        disposition: Optional[str] = None,
+        party_history: Optional[List[PartyHistory]] = None,
+        transferee: Optional[int] = None,
+        transferor: Optional[int] = None,
+        transfer_target: Optional[int] = None,
+        original: Optional[int] = None,
+        consultation: Optional[int] = None,
+        target_dialog: Optional[int] = None,
+        campaign: Optional[str] = None,
+        interaction: Optional[str] = None,
+        skill: Optional[str] = None,
+        duration: Optional[float] = None,
+        meta: Optional[dict] = None,
+        **kwargs,
+    ) -> None:
         """
         Initialize a Dialog object.
 
@@ -94,82 +97,48 @@ class Dialog:
         :type skill: str or None
         :param duration: the duration of the dialog
         :type duration: float or None
+        :param meta: additional metadata for the dialog
+        :type meta: dict or None
+        :param kwargs: Additional attributes to be set on the dialog
         """
-        
+
         # Convert the start time to an ISO 8601 string from a datetime or a string
         if isinstance(start, datetime):
             start = start.isoformat()
         elif isinstance(start, str):
             start = parser.parse(start).isoformat()
 
-        # Set the attributes
-        self.type = type
-        self.start = start
-        self.parties = parties
-        self.originator = originator
-        self.mimetype = mimetype
-        self.filename = filename
-        self.body = body
-        self.encoding = encoding
-        self.url = url
-        self.alg = alg
-        self.signature = signature
-        self.disposition = disposition
-        self.party_history = party_history
-        self.transferee = transferee
-        self.transferor = transferor
-        self.transfer_target = transfer_target
-        self.original = original
-        self.consultation = consultation
-        self.target_dialog = target_dialog
-        self.campaign = campaign
-        self.interaction = interaction
-        self.skill = skill
-        self.duration = duration
-        self.meta = meta
+        # Set attributes from named parameters that are not None
+        for key, value in locals().items():
+            if value is not None and key not in ("self", "kwargs"):
+                setattr(self, key, value)
+
+        # Set any additional kwargs as attributes
+        for key, value in kwargs.items():
+            if value is not None:
+                setattr(self, key, value)
 
     def to_dict(self):
         """
         Returns a dictionary representation of the Dialog object.
 
-        :return: a dictionary containing the Dialog object's attributes
+        :return: a dictionary containing all non-None Dialog object attributes
         :rtype: dict
         """
         # Check to see if the start time provided. If not,
         # set the start time to the current time
-        if not self.start:
+        if not hasattr(self, "start"):
             self.start = datetime.now().isoformat()
 
-        dialog_dict = {
-            "type": self.type,
-            "start": self.start,
-            "duration": self.duration,
-            "parties": self.parties,
-            "originator": self.originator,
-            "mimetype": self.mimetype,
-            "filename": self.filename,
-            "body": self.body,
-            "encoding": self.encoding,
-            "url": self.url,
-            "alg": self.alg,
-            "signature": self.signature,
-            "disposition": self.disposition,
-            "party_history": (
-                [party_history.to_dict() for party_history in self.party_history]
-                if self.party_history
-                else None
-            ),
-            "transferee": self.transferee,
-            "transferor": self.transferor,
-            "transfer_target": self.transfer_target,
-            "original": self.original,
-            "consultation": self.consultation,
-            "target_dialog": self.target_dialog,
-            "campaign": self.campaign,
-            "interaction": self.interaction,
-            "skill": self.skill,
-            "meta": self.meta
-        }
+        # Get all attributes of the object
+        dialog_dict = self.__dict__.copy()
+
+        # Handle party_history specially
+        if hasattr(self, "party_history") and self.party_history:
+            dialog_dict["party_history"] = [
+                party_history.to_dict() for party_history in self.party_history
+            ]
+
         return {k: v for k, v in dialog_dict.items() if v is not None}
 
     def add_external_data(self, url: str, filename: str, mimetype: str) -> None:
@@ -200,7 +169,9 @@ class Dialog:
         # Calculate the SHA-256 hash of the body as the signature
         self.alg = "sha256"
         self.encoding = "base64url"
-        self.signature = base64.urlsafe_b64encode(hashlib.sha256(response.text.encode()).digest()).decode()
+        self.signature = base64.urlsafe_b64encode(
+            hashlib.sha256(response.text.encode()).digest()
+        ).decode()
 
     def add_inline_data(self, body: str, filename: str, mimetype: str) -> None:
         """
@@ -221,38 +192,77 @@ class Dialog:
         self.alg = "sha256"
         self.encoding = "base64url"
         self.signature = base64.urlsafe_b64encode(
-            hashlib.sha256(self.body.encode()).digest()).decode()
+            hashlib.sha256(self.body.encode()).digest()
+        ).decode()
 
-    # Check if the dialog is an external data dialog
     def is_external_data(self) -> bool:
-        return self.url is not None
+        """
+        Check if the dialog is an external data dialog.
 
-    # Check if the dialog is an inline data dialog
+        :return: True if the dialog is an external data dialog, False otherwise
+        :rtype: bool
+        """
+        return hasattr(self, "url")
+
     def is_inline_data(self) -> bool:
-        return self.body is not None
+        """
+        Check if the dialog is an inline data dialog.
 
+        :return: True if the dialog is an inline data dialog, False otherwise
+        :rtype: bool
+        """
+        return not self.is_external_data()
 
-    # Check if the dialog is a text dialog
     def is_text(self) -> bool:
+        """
+        Check if the dialog is a text dialog.
+
+        :return: True if the dialog is a text dialog, False otherwise
+        :rtype: bool
+        """
         return self.mimetype == "text/plain"
 
-
-    # Check if the dialog is an audio dialog
     def is_audio(self) -> bool:
-        return self.mimetype in ["audio/x-wav", "audio/x-mp3", "audio/x-mp4", "audio/ogg"]
+        """
+        Check if the dialog is an audio dialog.
 
+        :return: True if the dialog is an audio dialog, False otherwise
+        :rtype: bool
+        """
+        return self.mimetype in [
+            "audio/x-wav",
+            "audio/x-mp3",
+            "audio/x-mp4",
+            "audio/ogg",
+        ]
 
-    # Check if the dialog is a video dialog
     def is_video(self) -> bool:
+        """
+        Check if the dialog is a video dialog.
+
+        :return: True if the dialog is a video dialog, False otherwise
+        :rtype: bool
+        """
         return self.mimetype in ["video/x-mp4", "video/ogg"]
 
     # Check if the dialog is an email dialog
     def is_email(self) -> bool:
+        """
+        Check if the dialog is an email dialog.
+
+        :return: True if the dialog is an email dialog, False otherwise
+        :rtype: bool
+        """
         return self.mimetype == "message/rfc822"
 
-    # Check to see if it's an external data dialog, that the contents are valid by
-    # checking the hash of the body against the signature
     def is_external_data_changed(self) -> bool:
+        """
+        Check to see if it's an external data dialog, that the contents are valid by
+        checking the hash of the body against the signature.
+
+        :return: True if the dialog is an external data dialog and the contents are valid, False otherwise
+        :rtype: bool
+        """
         if not self.is_external_data():
             return False
         try:
@@ -265,6 +275,13 @@ class Dialog:
     # Convert the dialog from an external data dialog to an inline data dialog
     # by reading the contents from the URL then adding the contents to the body
     def to_inline_data(self) -> None:
+        """
+        Convert the dialog from an external data dialog to an inline data dialog
+        by reading the contents from the URL then adding the contents to the body.
+
+        :return: None
+        :rtype: None
+        """
         # Read the contents from the URL
         response = requests.get(self.url)
         if response.status_code == 200:
@@ -276,7 +293,9 @@ class Dialog:
         # Calculate the SHA-256 hash of the body as the signature
         self.alg = "sha256"
         self.encoding = "base64url"
-        self.signature = base64.urlsafe_b64encode(hashlib.sha256(self.body.encode()).digest()).decode()
+        self.signature = base64.urlsafe_b64encode(
+            hashlib.sha256(self.body.encode()).digest()
+        ).decode()
 
         # Overide the filename if provided, otherwise use the filename from the URL
         if self.filename:

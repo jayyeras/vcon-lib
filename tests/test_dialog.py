@@ -3,6 +3,7 @@ from src.vcon.dialog import Dialog
 import hashlib
 import base64
 
+
 class TestDialog:
     # Initialization of Dialog object with all parameters
     def test_initialization_with_all_parameters(self):
@@ -35,7 +36,7 @@ class TestDialog:
             target_dialog=3,
             campaign="campaign1",
             interaction="interaction1",
-            skill="skill1"
+            skill="skill1",
         )
 
         # When & Then
@@ -73,14 +74,14 @@ class TestDialog:
             target_dialog=None,
             campaign=None,
             interaction=None,
-            skill=None
+            skill=None,
         )
 
         # When & Then
         assert dialog.type == "audio"
-        assert dialog.duration is None
-        assert dialog.originator is None
-        assert dialog.mimetype is None
+        assert not hasattr(dialog, "duration")
+        assert not hasattr(dialog, "originator")
+        assert not hasattr(dialog, "mimetype")
 
     def test_initialization_with_default_optional_parameters(self):
         # Given
@@ -88,11 +89,7 @@ class TestDialog:
         from src.vcon.dialog import Dialog
 
         dialog = Dialog(
-            type="video",
-            start=datetime.now(),
-            duration=0.0,
-            parties=[1],
-            originator=1
+            type="video", start=datetime.now(), duration=0.0, parties=[1], originator=1
         )
 
         # When & Then
@@ -100,26 +97,16 @@ class TestDialog:
         assert dialog.parties == [1]
         assert dialog.originator == 1
 
-    def test_retrieve_dialog_originator_when_set(self):
-        # Given
-        from datetime import datetime
-        from src.vcon.dialog import Dialog
-
         dialog = Dialog(
             type="video",
             start=datetime.now(),
             duration=0.0,
             parties=[1],
-            originator=1
+            originator=None,
         )
 
-        # When & Then
-        assert dialog.originator == 1
-
-    def test_retrieve_dialog_mimetype_when_set(self):
-        # Given
-        from datetime import datetime
-        from src.vcon.dialog import Dialog
+        assert not hasattr(dialog, "originator")
+        assert not hasattr(dialog, "body")
 
         dialog = Dialog(
             type="video",
@@ -127,7 +114,7 @@ class TestDialog:
             duration=0.0,
             parties=[1],
             originator=1,
-            mimetype="video/mp4"
+            mimetype="video/mp4",
         )
 
         # When & Then
@@ -165,7 +152,7 @@ class TestDialog:
             target_dialog=3,
             campaign="campaign1",
             interaction="interaction1",
-            skill="skill1"
+            skill="skill1",
         )
 
         # When
@@ -175,21 +162,22 @@ class TestDialog:
         assert dialog_dict["type"] == "text"
         assert dialog_dict["duration"] == 120.0
         assert dialog_dict["parties"] == [1, 2]
-        assert dialog_dict["party_history"] == [{"party": 1, "event": "join", "time": party_time}]
-
+        assert dialog_dict["party_history"] == [
+            {"party": 1, "event": "join", "time": party_time}
+        ]
 
     # Test the meta variable in the dialog
     def test_meta_variable_in_dialog(self):
         from datetime import datetime
         from src.vcon.dialog import Dialog
-    
+
         type = "audio"
         start = datetime.now().isoformat()
         parties = [1, 2]
         meta = {"key": "value"}
-    
+
         dialog = Dialog(type=type, start=start, parties=parties, meta=meta)
-    
+
         assert dialog.type == type
         assert dialog.start == start
         assert dialog.parties == parties
@@ -216,9 +204,11 @@ class TestDialog:
         assert dialog.filename == filename
         assert dialog.alg == "sha256"
         assert dialog.encoding == "base64url"
-        expected_signature = base64.urlsafe_b64encode(hashlib.sha256("sample data".encode()).digest()).decode()
+        expected_signature = base64.urlsafe_b64encode(
+            hashlib.sha256("sample data".encode()).digest()
+        ).decode()
         assert dialog.signature == expected_signature
-        assert dialog.body is None
+        assert not hasattr(dialog, "body")
 
     # URL returns a non-200 status code
     def test_fetch_external_data_failure(self, mocker):
@@ -248,7 +238,7 @@ class TestDialog:
         response_mock.status_code = 200
         response_mock.headers = {"Content-Type": mimetype}
         response_mock.text = "dummy data"
-        mocker.patch('requests.get', return_value=response_mock)
+        mocker.patch("requests.get", return_value=response_mock)
 
         # Invoke
         dialog.add_external_data(url, filename, None)
@@ -268,7 +258,7 @@ class TestDialog:
         response_mock.status_code = 200
         response_mock.headers = {"Content-Type": mimetype}
         response_mock.text = "dummy data"
-        mocker.patch('requests.get', return_value=response_mock)
+        mocker.patch("requests.get", return_value=response_mock)
 
         # Invoke
         dialog.add_external_data(url, filename, None)
@@ -302,8 +292,10 @@ class TestDialog:
         assert dialog.body == body
         assert dialog.filename == filename
         assert dialog.mimetype == mimetype
-        assert dialog.signature == base64.urlsafe_b64encode(
-            hashlib.sha256(body.encode()).digest()).decode()
+        assert (
+            dialog.signature
+            == base64.urlsafe_b64encode(hashlib.sha256(body.encode()).digest()).decode()
+        )
 
     # Generates a valid SHA-256 hash signature for the body
     def test_valid_sha256_signature(self):
@@ -314,7 +306,9 @@ class TestDialog:
         dialog.add_inline_data("example_body", "example_filename", "text/plain")
 
         # Check if the SHA-256 hash signature is valid
-        expected_signature = base64.urlsafe_b64encode(hashlib.sha256("example_body".encode()).digest()).decode()
+        expected_signature = base64.urlsafe_b64encode(
+            hashlib.sha256("example_body".encode()).digest()
+        ).decode()
         assert dialog.signature == expected_signature
 
     # Sets the encoding to "base64url"
@@ -327,19 +321,14 @@ class TestDialog:
 
         # Check if the encoding is set to "base64url"
         assert dialog.encoding == "base64url"
-        
-        
+
     # Initializes Dialog object with all required parameters
     def test_initializes_with_required_parameters(self):
         from datetime import datetime
         from src.vcon.dialog import Dialog
-    
-        dialog = Dialog(
-            type="text",
-            start=datetime.now(),
-            parties=[1, 2, 3]
-        )
-    
+
+        dialog = Dialog(type="text", start=datetime.now(), parties=[1, 2, 3])
+
         assert dialog.type == "text"
         assert isinstance(dialog.start, str)
         assert dialog.parties == [1, 2, 3]
@@ -349,13 +338,9 @@ class TestDialog:
         from src.vcon.dialog import Dialog
         from dateutil.parser import ParserError
         import pytest
-    
+
         with pytest.raises(ParserError):
-            Dialog(
-                type="text",
-                start="invalid-datetime",
-                parties=[1, 2, 3]
-            )
+            Dialog(type="text", start="invalid-datetime", parties=[1, 2, 3])
 
     # Converts start time to ISO 8601 string if provided as datetime
     def test_convert_start_time_to_iso_string(self):
@@ -367,16 +352,14 @@ class TestDialog:
         start_time = datetime(2022, 9, 15, 10, 30, 0)
 
         # Create a Dialog object with a datetime start time
-        with patch('src.vcon.dialog.parser') as mock_parser:
-            mock_parser.parse.return_value.isoformat.return_value = '2022-09-15T10:30:00'
-            dialog = Dialog(
-                type="audio",
-                start=start_time,
-                parties=[1, 2]
+        with patch("src.vcon.dialog.parser") as mock_parser:
+            mock_parser.parse.return_value.isoformat.return_value = (
+                "2022-09-15T10:30:00"
             )
+            dialog = Dialog(type="audio", start=start_time, parties=[1, 2])
 
         # Check if the start time is converted to ISO 8601 string
-        assert dialog.start == '2022-09-15T10:30:00'
+        assert dialog.start == "2022-09-15T10:30:00"
 
     # Converts start time to ISO 8601 string if provided as string
     def test_convert_start_time_to_iso_string(self):
@@ -387,13 +370,9 @@ class TestDialog:
         start_time = "2022-01-01T12:00:00"
         expected_iso_time = "2022-01-01T12:00:00"
 
-        with patch('src.vcon.dialog.parser') as mock_parser:
+        with patch("src.vcon.dialog.parser") as mock_parser:
             mock_parser.parse.return_value.isoformat.return_value = expected_iso_time
 
-            dialog = Dialog(
-                type="text",
-                start=start_time,
-                parties=[1, 2, 3]
-            )
+            dialog = Dialog(type="text", start=start_time, parties=[1, 2, 3])
 
             assert dialog.start == expected_iso_time

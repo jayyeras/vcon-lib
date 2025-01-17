@@ -4,18 +4,21 @@ from datetime import datetime
 
 
 class Party:
-    def __init__(self,
-                 tel: Optional[str] = None,
-                 stir: Optional[str] = None,
-                 mailto: Optional[str] = None,
-                 name: Optional[str] = None,
-                 validation: Optional[str] = None,
-                 gmlpos: Optional[str] = None,
-                 civicaddress: Optional[CivicAddress] = None,
-                 uuid: Optional[str] = None,
-                 role: Optional[str] = None,
-                 contact_list: Optional[str] = None,
-                 meta: Optional[dict] = None) -> None:
+    def __init__(
+        self,
+        tel: Optional[str] = None,
+        stir: Optional[str] = None,
+        mailto: Optional[str] = None,
+        name: Optional[str] = None,
+        validation: Optional[str] = None,
+        gmlpos: Optional[str] = None,
+        civicaddress: Optional[CivicAddress] = None,
+        uuid: Optional[str] = None,
+        role: Optional[str] = None,
+        contact_list: Optional[str] = None,
+        meta: Optional[dict] = None,
+        **kwargs
+    ) -> None:
         """
         Initialize a new Party object.
 
@@ -39,13 +42,15 @@ class Party:
         :type role: str | None
         :param contact_list: Contact list of the party
         :type contact_list: str | None
+        :param kwargs: Additional attributes to be set on the party
         """
-        # copy the values that are not None
-        # TODO: should we allow changing the values of the object?
-        #       for now, we just use the values that are not None
-        #       and ignore the other values
-        #       (this is also how the old code worked)
+        # copy the named parameters that are not None
         for key, value in locals().items():
+            if value is not None and key not in ("self", "kwargs"):
+                setattr(self, key, value)
+
+        # copy any additional kwargs
+        for key, value in kwargs.items():
             if value is not None:
                 setattr(self, key, value)
 
@@ -78,10 +83,6 @@ class PartyHistory:
         self.party = party
         self.event = event
         self.time = time
-        
+
     def to_dict(self):
-        return {
-            "party": self.party,
-            "event": self.event,
-            "time": self.time
-        }
+        return {"party": self.party, "event": self.event, "time": self.time}
