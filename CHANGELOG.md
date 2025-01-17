@@ -1,0 +1,5 @@
+- Updated the `__init__` methods in `Dialog` and `Party` classes to accept additional keyword arguments (`**kwargs`) for flexibility.
+- Simplified attribute assignment by using `locals()` to set non-None values.
+- Enhanced the `to_dict` method in `Dialog` to return all non-None attributes.
+- Improved readability and consistency in the code structure.
+- Added docstrings for better documentation of methods and parameters.
