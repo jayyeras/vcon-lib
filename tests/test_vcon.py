@@ -1,6 +1,7 @@
 from vcon import Vcon
 from vcon.party import Party
 from vcon.dialog import Dialog
+from typing import Union
 
 import pytest
 import json
@@ -35,23 +36,23 @@ test_vcon_string = (
     '{"agent_name":"David Scott","customer_name":"Diane Allen",'
     '"business":"Auto Repair Shop","problem":"billing","emotion":"disappointed",'
     '"prompt":"\\nGenerate a fake conversation between a customer and an agent.'
-    '\\nThe agent should introduce themselves, their company and give the customer'
-    '\\ntheir name. The agent should ask for the customer\'s name.\\nAs part of the '
-    'conversation, have the agent ask for two pieces of\\npersonal information.  '
-    'Spell out numbers. For example, 1000 should be\\nsaid as one zero zero zero, '
-    'not one thousand. The conversation should be\\nat least 10 lines long and be '
-    'complete. At the end\\nof the conversation, the agent should thank the customer '
-    'for their time\\nand end the conversation. Return the conversation formatted '
-    '\\nlike the following example:\\n\\n{\'conversation\': \\n    [\\n    {\'speaker\': '
-    '\'Agent\', \'message\': \'xxxxx\'}, \\n    {\'speaker\': \'Customer\', \'message\': '
-    '\\"xxxxx.\\"}, \\n    {\'speaker\': \'Agent\', \'message\': \\"xxxxxx\\"}\\n    ] '
-    '\\n}\\n\\n\\nIn this conversation, the agent\'s name is David Scott and the '
-    'customer\'s name is Diane Allen.  The conversation is about a random business '
+    "\\nThe agent should introduce themselves, their company and give the customer"
+    "\\ntheir name. The agent should ask for the customer's name.\\nAs part of the "
+    "conversation, have the agent ask for two pieces of\\npersonal information.  "
+    "Spell out numbers. For example, 1000 should be\\nsaid as one zero zero zero, "
+    "not one thousand. The conversation should be\\nat least 10 lines long and be "
+    "complete. At the end\\nof the conversation, the agent should thank the customer "
+    "for their time\\nand end the conversation. Return the conversation formatted "
+    "\\nlike the following example:\\n\\n{'conversation': \\n    [\\n    {'speaker': "
+    "'Agent', 'message': 'xxxxx'}, \\n    {'speaker': 'Customer', 'message': "
+    "\\\"xxxxx.\\\"}, \\n    {'speaker': 'Agent', 'message': \\\"xxxxxx\\\"}\\n    ] "
+    "\\n}\\n\\n\\nIn this conversation, the agent's name is David Scott and the "
+    "customer's name is Diane Allen.  The conversation is about a random business "
     '(a Auto Repair Shop ) and is a conversation about billing.",'
     '"created_on":"2024-10-20T15:02:55.490740","model":"gpt-4o-mini"},'
     '"encoding":"none"}],"analysis":[{"type":"analysis_info","dialog":0,'
     '"vendor":"openai","body":[{"speaker":"Agent","message":"Hello! My name is '
-    'David Scott, and I\'m with Quick Fix Auto Repair. How can I assist you today?"},'
+    "David Scott, and I'm with Quick Fix Auto Repair. How can I assist you today?\"},"
     '{"speaker":"Customer","message":"Hi David, I\'m Diane Allen. I have a question '
     'about my recent bill."},{"speaker":"Agent","message":"Of course, Diane! I\'d be '
     'happy to help you with that. Can you please provide me with the invoice number?"},'
@@ -65,21 +66,21 @@ test_vcon_string = (
     'there was an extra charge for parts. Would you like me to explain that?"},'
     '{"speaker":"Customer","message":"Yes, I would appreciate that."},'
     '{"speaker":"Agent","message":"The extra charge was for a new battery that was '
-    'installed. Thank you for your patience, and please let me know if you have any '
+    "installed. Thank you for your patience, and please let me know if you have any "
     'more questions."}],"encoding":"none","vendor_schema":{"model":"gpt-4o-mini",'
     '"prompt":"\\nGenerate a fake conversation between a customer and an agent.'
-    '\\nThe agent should introduce themselves, their company and give the customer'
-    '\\ntheir name. The agent should ask for the customer\'s name.\\nAs part of the '
-    'conversation, have the agent ask for two pieces of\\npersonal information.  '
-    'Spell out numbers. For example, 1000 should be\\nsaid as one zero zero zero, '
-    'not one thousand. The conversation should be\\nat least 10 lines long and be '
-    'complete. At the end\\nof the conversation, the agent should thank the customer '
-    'for their time\\nand end the conversation. Return the conversation formatted '
-    '\\nlike the following example:\\n\\n{\'conversation\': \\n    [\\n    {\'speaker\': '
-    '\'Agent\', \'message\': \'xxxxx\'}, \\n    {\'speaker\': \'Customer\', \'message\': '
-    '\\"xxxxx.\\"}, \\n    {\'speaker\': \'Agent\', \'message\': \\"xxxxxx\\"}\\n    ] '
-    '\\n}\\n\\n\\nIn this conversation, the agent\'s name is David Scott and the '
-    'customer\'s name is Diane Allen.  The conversation is about a random business '
+    "\\nThe agent should introduce themselves, their company and give the customer"
+    "\\ntheir name. The agent should ask for the customer's name.\\nAs part of the "
+    "conversation, have the agent ask for two pieces of\\npersonal information.  "
+    "Spell out numbers. For example, 1000 should be\\nsaid as one zero zero zero, "
+    "not one thousand. The conversation should be\\nat least 10 lines long and be "
+    "complete. At the end\\nof the conversation, the agent should thank the customer "
+    "for their time\\nand end the conversation. Return the conversation formatted "
+    "\\nlike the following example:\\n\\n{'conversation': \\n    [\\n    {'speaker': "
+    "'Agent', 'message': 'xxxxx'}, \\n    {'speaker': 'Customer', 'message': "
+    "\\\"xxxxx.\\\"}, \\n    {'speaker': 'Agent', 'message': \\\"xxxxxx\\\"}\\n    ] "
+    "\\n}\\n\\n\\nIn this conversation, the agent's name is David Scott and the "
+    "customer's name is Diane Allen.  The conversation is about a random business "
     '(a Auto Repair Shop ) and is a conversation about billing."}}]}'
 )
 
@@ -88,7 +89,7 @@ GITHUB_WAV_URL = "https://github.com/vcon-dev/vcon-lib/raw/841eca9198397e768f478
 
 # Helper function to get the duration of an external audio file. Account for WAV and MP3 files, which have different formats.
 # Download the file and calculate the duration.
-def get_audio_duration(url: str) -> float | None:
+def get_audio_duration(url: str) -> Union[float, None]:
     """
     Downloads an audio file and calculates its duration.s
     Supports WAV and MP3 formats.
@@ -110,26 +111,26 @@ def get_audio_duration(url: str) -> float | None:
         if response.status_code != 200:
             print(f"Failed to download file from {url}")
             return None
-        
+
         audio_data = io.BytesIO(response.content)
-        
+
         # Calculate duration based on file type
-        if url.lower().endswith('.wav'):
+        if url.lower().endswith(".wav"):
             with wave.open(audio_data) as wav:
                 frames = wav.getnframes()
                 rate = wav.getframerate()
                 duration = frames / float(rate)
                 print(f"Duration: {duration}")
                 return duration
-                
-        elif url.lower().endswith('.mp3'):
+
+        elif url.lower().endswith(".mp3"):
             audio_data.seek(0)
             mp3 = MP3(audio_data)
             print(f"Duration: {mp3.info.length}")
             return mp3.info.length
-            
+
         return None
-        
+
     except Exception:
         return None
 
@@ -175,10 +176,7 @@ def test_add_attachment() -> None:
 def test_add_analysis() -> None:
     vcon = Vcon.build_new()
     vcon.add_analysis(
-        type="test_type",
-        dialog=[1, 2],
-        vendor="test_vendor",
-        body={"key": "value"}
+        type="test_type", dialog=[1, 2], vendor="test_vendor", body={"key": "value"}
     )
     analysis = vcon.find_analysis_by_type("test_type")
     assert analysis["body"] == {"key": "value"}
@@ -187,17 +185,19 @@ def test_add_analysis() -> None:
 
 
 def test_add_dialog() -> None:
-    #Given 
+    # Given
     vcon = Vcon.build_new()
-    dialog = Dialog(start="2023-06-01T10:00:00Z", parties=[0], type="text", body="Hello, world!")
+    dialog = Dialog(
+        start="2023-06-01T10:00:00Z", parties=[0], type="text", body="Hello, world!"
+    )
     vcon.add_dialog(dialog)
-    
+
     # When
     found_dialog = vcon.find_dialog("type", "text")
-    
+
     # Then these dialogs should be the same values. Check
     assert found_dialog.to_dict() == dialog.to_dict()
-    
+
 
 def test_to_json() -> None:
     vcon = Vcon.build_new()
@@ -231,10 +231,7 @@ def test_find_attachment_by_type() -> None:
 def test_find_analysis_by_type() -> None:
     vcon = Vcon.build_new()
     vcon.add_analysis(
-        type="test_type",
-        dialog=[1, 2],
-        vendor="test_vendor",
-        body={"key": "value"}
+        type="test_type", dialog=[1, 2], vendor="test_vendor", body={"key": "value"}
     )
     assert vcon.find_analysis_by_type("test_type") == {
         "type": "test_type",
@@ -277,13 +274,13 @@ def test_properties() -> None:
         "tel": "+14513886516",
         "mailto": "david.scott@pickrandombusinesstype.com",
         "name": "David Scott",
-        "meta": {"role": "agent"}
+        "meta": {"role": "agent"},
     }
     assert vcon.parties[1].to_dict() == {
         "tel": "+16171557264",
         "mailto": "diane.allen@gmail.com",
         "name": "Diane Allen",
-        "meta": {"role": "customer"}
+        "meta": {"role": "customer"},
     }
 
     assert len(vcon.dialog) == 1
@@ -298,7 +295,7 @@ def test_properties() -> None:
         "encoding": "base64url",
         "alg": "sha256",
         "signature": "JBzeZEPDNVm8iPEeout0UK-B2Fp6JzeQxqy70SvM_MU=",
-        "disposition": "ANSWERED"
+        "disposition": "ANSWERED",
     }
 
     assert len(vcon.attachments) == 1
@@ -352,12 +349,14 @@ def test_add_and_find_party_index() -> None:
 def test_find_dialog() -> None:
     # Given
     vcon = Vcon.build_new()
-    dialog = Dialog(start="2023-06-01T10:00:00Z", parties=[0], type="text", body="Hello, world!")
+    dialog = Dialog(
+        start="2023-06-01T10:00:00Z", parties=[0], type="text", body="Hello, world!"
+    )
     vcon.add_dialog(dialog)
-    
+
     # When
     found_dialog = vcon.find_dialog("type", "text")
-    
+
     # Then these dialogs should be the same values. Check
     # that the dialog we found is the same as the dialog we added.
     assert found_dialog.to_dict() == dialog.to_dict()
@@ -389,52 +388,65 @@ def test_add_and_find_party_index_by_name() -> None:
 
 def test_initializes_with_empty_dict() -> None:
     from src.vcon.vcon import Vcon
+
     vcon = Vcon()
     assert isinstance(vcon.vcon_dict, dict)
     assert "created_at" in vcon.vcon_dict
 
+
 def test_initializes_with_datetime_created_at() -> None:
     from src.vcon.vcon import Vcon
     from datetime import datetime
+
     vcon_dict = {"created_at": datetime.now()}
     vcon = Vcon(vcon_dict)
     assert isinstance(vcon.vcon_dict, dict)
     assert "created_at" in vcon.vcon_dict
 
+
 def test_initializes_with_created_at_string() -> None:
     from src.vcon.vcon import Vcon
     import datetime
+
     vcon_dict = {"created_at": "2022-01-01T12:00:00Z"}
     vcon = Vcon(vcon_dict)
     assert isinstance(vcon.vcon_dict, dict)
     assert "created_at" in vcon.vcon_dict
     assert isinstance(vcon.vcon_dict["created_at"], str)
 
+
 def test_initializes_without_created_at() -> None:
     from src.vcon.vcon import Vcon
+
     vcon = Vcon({})
     assert isinstance(vcon.vcon_dict, dict)
     assert "created_at" in vcon.vcon_dict
 
+
 def test_converts_created_at_to_iso_format_when_datetime_provided() -> None:
     from src.vcon.vcon import Vcon
     from datetime import datetime
+
     test_datetime = datetime(2022, 9, 15, 8, 30, 0)
     vcon = Vcon({"created_at": test_datetime})
     assert "created_at" in vcon.vcon_dict
     assert isinstance(vcon.vcon_dict["created_at"], str)
     assert len(vcon.vcon_dict["created_at"]) == 19
 
+
 def test_sets_created_at_to_current_time() -> None:
     from src.vcon.vcon import Vcon
+
     vcon = Vcon()
     assert "created_at" in vcon.vcon_dict
     assert isinstance(vcon.vcon_dict["created_at"], str)
     assert datetime.fromisoformat(vcon.vcon_dict["created_at"])
 
+
 def test_converts_created_at_to_iso_format_with_timezone() -> None:
     from src.vcon.vcon import Vcon
     from datetime import datetime, timezone
+
     created_at = datetime(2022, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     vcon_dict = {"created_at": created_at}
     vcon = Vcon(vcon_dict)
@@ -442,8 +454,10 @@ def test_converts_created_at_to_iso_format_with_timezone() -> None:
     assert isinstance(vcon.vcon_dict["created_at"], str)
     assert vcon.vcon_dict["created_at"] == created_at.isoformat()
 
+
 def test_deep_copy_into_vcon_dict() -> None:
     from src.vcon.vcon import Vcon
+
     vcon_dict = {"created_at": "2022-01-01T12:00:00Z", "data": {"key": "value"}}
     vcon = Vcon(vcon_dict)
     assert vcon.vcon_dict is not vcon_dict, "vcon_dict should be a deep copy"
@@ -453,7 +467,7 @@ def test_add_dialog_external_audio() -> None:
     """Test adding a dialog with an external audio file reference"""
     # Given
     vcon = Vcon.build_new()
-    
+
     external_dialog = Dialog(
         start="2023-06-01T10:00:00Z",
         parties=[0],
@@ -461,12 +475,12 @@ def test_add_dialog_external_audio() -> None:
         url=GITHUB_WAV_URL,
         mimetype="audio/wav",
         duration=get_audio_duration(GITHUB_WAV_URL),
-        meta={"direction": "in"}
+        meta={"direction": "in"},
     )
 
     # When
     vcon.add_dialog(external_dialog)
-    
+
     # Then
     found_dialog = vcon.find_dialog("type", "recording")
     assert found_dialog.to_dict() == external_dialog.to_dict()
@@ -478,7 +492,7 @@ def test_add_dialog_inline_audio():
     """Test adding a dialog with inline base64 audio data"""
     # Given
     vcon = Vcon.build_new()
-    
+
     inline_dialog = Dialog(
         start="2023-06-01T10:00:00Z",
         parties=[0],
@@ -486,12 +500,12 @@ def test_add_dialog_inline_audio():
         url=GITHUB_WAV_URL,
         mimetype="audio/mp3",
         duration=get_audio_duration(GITHUB_WAV_URL),
-        meta={"direction": "out"}
+        meta={"direction": "out"},
     )
 
     # When
     vcon.add_dialog(inline_dialog)
-    
+
     # Then
     found_dialog = vcon.find_dialog("type", "recording")
     assert found_dialog.to_dict() == inline_dialog.to_dict()
@@ -503,32 +517,28 @@ def test_add_multiple_dialogs():
     """Test adding and finding multiple dialogs"""
     # Given
     vcon = Vcon.build_new()
-    
+
     text_dialog = Dialog(
-        start="2023-06-01T10:00:00Z",
-        parties=[0],
-        type="text",
-        body="Hello, world!"
+        start="2023-06-01T10:00:00Z", parties=[0], type="text", body="Hello, world!"
     )
-    
+
     audio_dialog = Dialog(
         start="2023-06-01T10:01:00Z",
         parties=[0, 1],
         type="recording",
         url=GITHUB_WAV_URL,
         mimetype="audio/mp3",
-        duration=get_audio_duration(GITHUB_WAV_URL)
+        duration=get_audio_duration(GITHUB_WAV_URL),
     )
 
     # When
     vcon.add_dialog(text_dialog)
     vcon.add_dialog(audio_dialog)
-    
+
     # Then
     found_text = vcon.find_dialog("type", "text")
     found_audio = vcon.find_dialog("type", "recording")
-    
+
     assert found_text.to_dict() == text_dialog.to_dict()
     assert found_audio.to_dict() == audio_dialog.to_dict()
     assert len(vcon.dialog) == 2
-    
