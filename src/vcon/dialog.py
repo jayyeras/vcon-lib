@@ -284,10 +284,6 @@ class Dialog:
         :return: None
         :rtype: None
         """
-        # Ensure filename attribute exists
-        if not hasattr(self, "filename"):
-            self.filename = None
-
         # Read the contents from the URL
         response = requests.get(self.url)
         if response.status_code == 200:
@@ -306,11 +302,9 @@ class Dialog:
             hashlib.sha256(raw_content).digest()
         ).decode()
 
-        # Set the filename if not already provided
-        if not self.filename:
-            # Extract filename from URL, removing any query parameters
-            url_path = self.url.split("?")[0]
-            self.filename = url_path.split("/")[-1]
+        # Set the filename if it doesn't exist
+        if not hasattr(self, "filename"):
+            self.filename = self.url.split("/")[-1]
 
         # Remove the url since this is now inline data
         delattr(self, "url")
