@@ -1,0 +1,226 @@
+# vCon Library API Guide
+
+## Table of Contents
+1. [Core Classes](#core-classes)
+2. [Creating and Managing vCons](#creating-and-managing-vcons)
+3. [Working with Parties](#working-with-parties)
+4. [Managing Dialog](#managing-dialog)
+5. [Attachments and Analysis](#attachments-and-analysis)
+6. [Security and Validation](#security-and-validation)
+
+## Core Classes
+
+### Vcon
+The main class for creating and managing virtual conversation containers.
+
+```python
+from vcon import Vcon
+```
+
+#### Initialization
+- `Vcon(vcon_dict={})`: Initialize from a dictionary
+- `Vcon.build_new()`: Create a new vCon with default values
+- `Vcon.build_from_json(json_string)`: Create from JSON string
+
+#### Properties
+- `uuid`: Unique identifier
+- `vcon`: Version number
+- `created_at`: Creation timestamp
+- `updated_at`: Last update timestamp
+- `parties`: List of participants
+- `dialog`: List of dialog entries
+- `attachments`: List of attachments
+- `analysis`: List of analysis entries
+- `redacted`: Redaction information
+- `group`: Group information
+- `meta`: Metadata
+- `tags`: Tags attachment
+
+### Party
+Represents a participant in the conversation.
+
+```python
+from vcon.party import Party
+```
+
+#### Initialization Parameters
+- `tel`: Telephone number
+- `stir`: STIR verification
+- `mailto`: Email address
+- `name`: Party name
+- `validation`: Validation status
+- `gmlpos`: Geographic position
+- `civicaddress`: Civic address
+- `uuid`: Unique identifier
+- `role`: Party role
+- `contact_list`: Contact list
+- `meta`: Additional metadata
+
+### Dialog
+Represents a conversation entry.
+
+```python
+from vcon.dialog import Dialog
+```
+
+#### Supported MIME Types
+- `text/plain`
+- `audio/x-wav`, `audio/wav`, `audio/wave`
+- `audio/mpeg`, `audio/mp3`
+- `audio/ogg`
+- `audio/webm`
+- `audio/x-m4a`
+- `audio/aac`
+- `video/x-mp4`
+- `video/ogg`
+- `multipart/mixed`
+
+## Creating and Managing vCons
+
+### Creating a New vCon
+```python
+# Create empty vCon
+vcon = Vcon.build_new()
+
+# Create from dictionary
+vcon = Vcon({"uuid": "...", "vcon": "0.0.1"})
+
+# Create from JSON
+vcon = Vcon.build_from_json(json_string)
+```
+
+### Serialization
+```python
+# To JSON string
+json_str = vcon.to_json()
+# or
+json_str = vcon.dumps()
+
+# To dictionary
+dict_data = vcon.to_dict()
+```
+
+### Tags
+```python
+# Add a tag
+vcon.add_tag("category", "support")
+
+# Get a tag value
+value = vcon.get_tag("category")
+
+# Get all tags
+tags = vcon.tags
+```
+
+## Working with Parties
+
+### Adding Parties
+```python
+# Create and add a party
+party = Party(
+    tel="+1234567890",
+    name="John Doe",
+    role="customer"
+)
+vcon.add_party(party)
+```
+
+### Finding Parties
+```python
+# Find party index by attribute
+index = vcon.find_party_index("tel", "+1234567890")
+```
+
+## Managing Dialog
+
+### Adding Dialog Entries
+```python
+# Add a text dialog
+dialog = Dialog(
+    type="text",
+    start="2024-03-21T10:00:00Z",
+    parties=[0, 1],
+    mimetype="text/plain",
+    body="Hello, how can I help?"
+)
+vcon.add_dialog(dialog)
+```
+
+### Working with Media
+```python
+# Add inline data
+dialog.add_inline_data(
+    body="base64_encoded_content",
+    filename="recording.wav",
+    mimetype="audio/wav"
+)
+
+# Check data type
+is_external = dialog.is_external_data()
+is_inline = dialog.is_inline_data()
+```
+
+## Attachments and Analysis
+
+### Attachments
+```python
+# Add an attachment
+vcon.add_attachment(
+    type="document",
+    body="content",
+    encoding="none"
+)
+
+# Find attachment
+attachment = vcon.find_attachment_by_type("document")
+```
+
+### Analysis
+```python
+# Add analysis
+vcon.add_analysis(
+    type="sentiment",
+    dialog=[0],
+    vendor="analyzer",
+    body={"score": 0.8},
+    encoding="json"
+)
+
+# Find analysis
+analysis = vcon.find_analysis_by_type("sentiment")
+```
+
+## Security and Validation
+
+### Signing and Verification
+```python
+# Generate key pair
+private_key, public_key = Vcon.generate_key_pair()
+
+# Sign vCon
+vcon.sign(private_key)
+
+# Verify signature
+is_valid = vcon.verify(public_key)
+```
+
+### Validation
+```python
+# Validate vCon object
+is_valid, errors = vcon.is_valid()
+
+# Validate JSON file
+is_valid, errors = Vcon.validate_file("conversation.json")
+
+# Validate JSON string
+is_valid, errors = Vcon.validate_json(json_string)
+```
+
+### UUID Generation
+```python
+# Generate UUID8 from domain name
+uuid = Vcon.uuid8_domain_name("example.com")
+
+# Generate UUID8 with custom bits
+uuid = Vcon.uuid8_time(custom_bits)
+```

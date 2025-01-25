@@ -7,6 +7,8 @@ import pytest
 import json
 from datetime import datetime
 
+from vcon.vcon import Attachment
+
 """
 This covers testing the main methods of the Vcon class, including:
 
@@ -29,7 +31,7 @@ test_vcon_string = (
     '{"tel":"+16171557264","mailto":"diane.allen@gmail.com","name":"Diane Allen",'
     '"meta":{"role":"customer"}}],"dialog":[{"type":"recording",'
     '"start":"2024-10-20T15:02:54.888840","duration":52.68,"parties":[0,1],'
-    '"mimetype":"audio/mp3","filename":"bb1489ad-0b45-47a0-bca6-de124da39a3a.mp3",'
+    '"mimetype":"audio/x-wav","filename":"bb1489ad-0b45-47a0-bca6-de124da39a3a.mp3",'
     '"body":"","encoding":"base64url","alg":"sha256",'
     '"signature":"JBzeZEPDNVm8iPEeout0UK-B2Fp6JzeQxqy70SvM_MU=",'
     '"disposition":"ANSWERED"}],"attachments":[{"type":"generation_info","body":'
@@ -166,11 +168,17 @@ def test_tags() -> None:
     assert vcon.get_tag("test_tag") == "test_value"
 
 
-def test_add_attachment() -> None:
-    vcon = Vcon.build_new()
-    vcon.add_attachment(body={"key": "value"}, type="test_type")
-    attachment = vcon.find_attachment_by_type("test_type")
-    assert attachment["body"] == {"key": "value"}
+def test_add_attachment():
+    vcon = Vcon()
+    attachment = vcon.add_attachment(type="test_type", body="test_body")
+
+    assert len(vcon.vcon_dict["attachments"]) == 1
+    assert vcon.vcon_dict["attachments"][0] == {
+        "type": "test_type",
+        "body": "test_body",
+        "encoding": "none",
+    }
+    assert isinstance(attachment, Attachment)
 
 
 def test_add_analysis() -> None:
@@ -289,7 +297,7 @@ def test_properties() -> None:
         "start": "2024-10-20T15:02:54.888840",
         "duration": 52.68,
         "parties": [0, 1],
-        "mimetype": "audio/mp3",
+        "mimetype": "audio/x-wav",
         "filename": "bb1489ad-0b45-47a0-bca6-de124da39a3a.mp3",
         "body": "",
         "encoding": "base64url",
@@ -542,3 +550,155 @@ def test_add_multiple_dialogs():
     assert found_text.to_dict() == text_dialog.to_dict()
     assert found_audio.to_dict() == audio_dialog.to_dict()
     assert len(vcon.dialog) == 2
+
+
+def test_is_valid_with_valid_vcon():
+    """Test that a valid vCon passes validation"""
+    vcon = Vcon.build_from_json(test_vcon_string)
+    print(vcon.to_json())
+    is_valid, errors = vcon.is_valid()
+    print(errors)
+    assert is_valid
+    assert len(errors) == 0
+
+
+def test_is_valid_with_missing_required_fields():
+    """Test validation fails with missing required fields"""
+    vcon = Vcon()
+    vcon.vcon_dict = {}  # Empty vCon
+    is_valid, errors = vcon.is_valid()
+    assert not is_valid
+    assert len(errors) == 3  # uuid, vcon, created_at
+    assert "Missing required field: uuid" in errors
+    assert "Missing required field: vcon" in errors
+    assert "Missing required field: created_at" in errors
+
+
+def test_is_valid_with_invalid_created_at():
+    """Test validation fails with invalid created_at format"""
+    vcon = Vcon.build_new()
+    vcon.vcon_dict["created_at"] = "invalid-date"
+    is_valid, errors = vcon.is_valid()
+    assert not is_valid
+    assert "Invalid created_at format" in errors[0]
+
+
+def test_is_valid_with_invalid_dialog_party_reference():
+    """Test validation fails with invalid party reference in dialog"""
+    vcon = Vcon.build_new()
+    vcon.add_party(Party(name="Test Party"))  # Add one party (index 0)
+
+    # Add dialog referencing non-existent party (index 1)
+    dialog = Dialog(
+        type="text",
+        start="2023-06-01T10:00:00Z",
+        parties=[0, 1],  # Party index 1 doesn't exist
+        body="Test message",
+    )
+    vcon.add_dialog(dialog)
+
+    is_valid, errors = vcon.is_valid()
+    assert not is_valid
+    assert any("invalid party index: 1" in error for error in errors)
+
+
+def test_is_valid_with_invalid_analysis_dialog_reference():
+    """Test validation fails with invalid dialog reference in analysis"""
+    vcon = Vcon.build_new()
+
+    # Add analysis referencing non-existent dialog
+    vcon.add_analysis(
+        type="test_type",
+        dialog=0,  # Dialog index 0 doesn't exist
+        vendor="test_vendor",
+        body={"key": "value"},
+    )
+
+    is_valid, errors = vcon.is_valid()
+    assert not is_valid
+    assert any("invalid dialog index: 0" in error for error in errors)
+
+
+def test_is_valid_with_invalid_mimetype():
+    """Test validation fails with invalid mimetype in dialog"""
+    vcon = Vcon.build_new()
+
+    # Add dialog with invalid mimetype
+    dialog = Dialog(
+        type="text", start="2023-06-01T10:00:00Z", parties=[], mimetype="invalid/type"
+    )
+    vcon.add_dialog(dialog)
+
+    is_valid, errors = vcon.is_valid()
+    assert not is_valid
+    assert any("invalid mimetype: invalid/type" in error for error in errors)
+
+
+def test_validate_json_with_valid_vcon():
+    """Test validation of valid vCon JSON string"""
+    is_valid, errors = Vcon.validate_json(test_vcon_string)
+    assert is_valid
+    assert len(errors) == 0
+
+
+def test_validate_json_with_invalid_json():
+    """Test validation fails with invalid JSON"""
+    is_valid, errors = Vcon.validate_json("invalid json")
+    assert not is_valid
+    assert len(errors) == 1
+    assert "Invalid JSON format" in errors[0]
+
+
+def test_validate_json_with_invalid_vcon():
+    """Test validation fails with valid JSON but invalid vCon"""
+    invalid_vcon = '{"some": "json"}'
+    is_valid, errors = Vcon.validate_json(invalid_vcon)
+    assert not is_valid
+    assert len(errors) > 0
+    assert "Missing required field" in errors[0]
+
+
+def test_validate_file_with_valid_vcon(tmp_path):
+    """Test validation of valid vCon file"""
+    # Create a temporary file with valid vCon
+    file_path = tmp_path / "valid_vcon.json"
+    with open(file_path, "w") as f:
+        f.write(test_vcon_string)
+
+    is_valid, errors = Vcon.validate_file(str(file_path))
+    assert is_valid
+    assert len(errors) == 0
+
+
+def test_validate_file_with_nonexistent_file():
+    """Test validation fails with nonexistent file"""
+    is_valid, errors = Vcon.validate_file("nonexistent.json")
+    assert not is_valid
+    assert len(errors) == 1
+    assert "File not found" in errors[0]
+
+
+def test_validate_file_with_invalid_json(tmp_path):
+    """Test validation fails with invalid JSON file"""
+    # Create a temporary file with invalid JSON
+    file_path = tmp_path / "invalid.json"
+    with open(file_path, "w") as f:
+        f.write("invalid json")
+
+    is_valid, errors = Vcon.validate_file(str(file_path))
+    assert not is_valid
+    assert len(errors) == 1
+    assert "Invalid JSON format" in errors[0]
+
+
+def test_validate_file_with_invalid_vcon(tmp_path):
+    """Test validation fails with valid JSON but invalid vCon"""
+    # Create a temporary file with invalid vCon
+    file_path = tmp_path / "invalid_vcon.json"
+    with open(file_path, "w") as f:
+        f.write('{"some": "json"}')
+
+    is_valid, errors = Vcon.validate_file(str(file_path))
+    assert not is_valid
+    assert len(errors) > 0
+    assert "Missing required field" in errors[0]
