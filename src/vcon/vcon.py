@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from dateutil import parser
 import json
 from typing import Optional, Union, Any
 import hashlib
@@ -16,9 +17,22 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from .party import Party
 from .dialog import Dialog
-from dateutil import parser
 
 _LAST_V8_TIMESTAMP = None
+
+
+class Attachment:
+    VALID_ENCODINGS = ["base64", "base64url", "none"]
+
+    def __init__(self, type, body, encoding="none"):
+        if encoding not in self.VALID_ENCODINGS:
+            raise ValueError(f"Invalid encoding: {encoding}")
+        self.type = type
+        self.body = body
+        self.encoding = encoding
+
+    def to_dict(self):
+        return {"type": self.type, "body": self.body, "encoding": self.encoding}
 
 
 class Vcon:
@@ -33,17 +47,18 @@ class Vcon:
         # If the vcon_dict contains a created_at in datetime or in string, format it like a ISO 8601
         if vcon_dict.get("created_at"):
             if isinstance(vcon_dict["created_at"], datetime):
-                vcon_dict["created_at"] = (
-                    vcon_dict["created_at"].isoformat()
-                )
+                vcon_dict["created_at"] = vcon_dict["created_at"].isoformat()
             elif isinstance(vcon_dict["created_at"], str):
-                vcon_dict["created_at"] = (
-                    parser.parse(vcon_dict["created_at"]).isoformat()
-                )
+                vcon_dict["created_at"] = parser.parse(
+                    vcon_dict["created_at"]
+                ).isoformat()
         else:
-            vcon_dict["created_at"] = (
-                datetime.now(timezone.utc).isoformat()
-            )
+            vcon_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Ensure attachments array exists
+        if "attachments" not in vcon_dict:
+            vcon_dict["attachments"] = []
+
         self.vcon_dict = json.loads(json.dumps(vcon_dict))
 
     @classmethod
@@ -147,42 +162,16 @@ class Vcon:
             (a for a in self.vcon_dict["attachments"] if a["type"] == type), None
         )
 
-    def add_attachment(
-        self, *, body: Union[dict, list, str], type: str, encoding="none"
-    ) -> None:
-        """
-        Adds an attachment to the vCon.
+    def add_attachment(self, type, body, encoding="none"):
+        VALID_ENCODINGS = ["base64", "base64url", "none"]
 
-        :param body: the body of the attachment
-        :type body: Union[dict, list, str]
-        :param type: the type of the attachment
-        :type type: str
-        :param encoding: the encoding of the attachment body
-        :type encoding: str
-        :return: None
-        :rtype: None
-        """
-        if encoding not in ["json", "none", "base64url"]:
-            raise Exception("Invalid encoding")
+        if encoding not in VALID_ENCODINGS:
+            raise ValueError(f"Invalid encoding: {encoding}")
 
-        if encoding == "json":
-            try:
-                json.loads(body)
-            except Exception as e:
-                raise Exception("Invalid JSON body: ", e)
+        attachment = Attachment(type, body, encoding)
 
-        if encoding == "base64url":
-            try:
-                base64.urlsafe_b64decode(body)
-            except Exception as e:
-                raise Exception("Invalid base64url body: ", e)
-
-        attachment = {
-            "type": type,
-            "body": body,
-            "encoding": encoding,
-        }
-        self.vcon_dict["attachments"].append(attachment)
+        self.vcon_dict["attachments"].append(attachment.to_dict())
+        return attachment
 
     def find_analysis_by_type(self, type) -> Any | None:
         """
@@ -501,3 +490,213 @@ class Vcon:
         private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         public_key = private_key.public_key()
         return private_key, public_key
+
+    def is_valid(self) -> tuple[bool, list[str]]:
+        """
+        Validate the vCon syntax according to the standard.
+
+        :return: A tuple containing (is_valid, list_of_errors)
+        :rtype: tuple[bool, list[str]]
+        """
+        errors = []
+
+        # Required fields
+        required_fields = ["uuid", "vcon", "created_at"]
+        for field in required_fields:
+            if field not in self.vcon_dict:
+                errors.append(f"Missing required field: {field}")
+
+        # Validate created_at format
+        if "created_at" in self.vcon_dict:
+            try:
+                parser.parse(self.vcon_dict["created_at"])
+            except Exception:
+                errors.append(
+                    "Invalid created_at format. Must be ISO 8601 datetime string"
+                )
+
+        # Validate parties
+        if "parties" in self.vcon_dict:
+            if not isinstance(self.vcon_dict["parties"], list):
+                errors.append("parties must be a list")
+            else:
+                for i, party in enumerate(self.vcon_dict["parties"]):
+                    if not isinstance(party, dict):
+                        errors.append(f"Party at index {i} must be a dictionary")
+
+        # Validate dialogs
+        if "dialog" in self.vcon_dict:
+            if not isinstance(self.vcon_dict["dialog"], list):
+                errors.append("dialog must be a list")
+            else:
+                for i, dialog in enumerate(self.vcon_dict["dialog"]):
+                    if not isinstance(dialog, dict):
+                        errors.append(f"Dialog at index {i} must be a dictionary")
+                    else:
+                        # Required dialog fields
+                        dialog_required = ["type", "start", "parties"]
+                        for field in dialog_required:
+                            if field not in dialog:
+                                errors.append(
+                                    f"Dialog at index {i} missing required field: {field}"
+                                )
+
+                        # Validate dialog parties reference valid party indices
+                        if "parties" in dialog and isinstance(dialog["parties"], list):
+                            party_count = len(self.vcon_dict.get("parties", []))
+                            for party_idx in dialog["parties"]:
+                                if (
+                                    not isinstance(party_idx, int)
+                                    or party_idx < 0
+                                    or party_idx >= party_count
+                                ):
+                                    errors.append(
+                                        f"Dialog at index {i} references invalid party index: {party_idx}"
+                                    )
+
+                        # Validate start time format
+                        if "start" in dialog:
+                            try:
+                                parser.parse(dialog["start"])
+                            except Exception:
+                                errors.append(
+                                    f"Dialog at index {i} has invalid start format. Must be ISO 8601 datetime string"
+                                )
+
+                        # Validate mimetype if present
+                        if (
+                            "mimetype" not in dialog
+                            or not isinstance(dialog["mimetype"], str)
+                            or dialog["mimetype"] not in Dialog.MIME_TYPES
+                        ):
+                            errors.append(
+                                f"Dialog {i} has invalid mimetype: {dialog.get('mimetype', 'missing')}"
+                            )
+                            valid = False
+
+        # Validate attachments
+        if "attachments" in self.vcon_dict:
+            if not isinstance(self.vcon_dict["attachments"], list):
+                errors.append("attachments must be a list")
+            else:
+                for i, attachment in enumerate(self.vcon_dict["attachments"]):
+                    if not isinstance(attachment, dict):
+                        errors.append(f"Attachment at index {i} must be a dictionary")
+                    else:
+                        # Required attachment fields
+                        attachment_required = ["type", "body", "encoding"]
+                        for field in attachment_required:
+                            if field not in attachment:
+                                errors.append(
+                                    f"Attachment at index {i} missing required field: {field}"
+                                )
+
+                        # Validate encoding
+                        if "encoding" in attachment and attachment["encoding"] not in [
+                            "json",
+                            "none",
+                            "base64url",
+                        ]:
+                            errors.append(
+                                f"Attachment at index {i} has invalid encoding: {attachment['encoding']}"
+                            )
+
+        # Validate analysis
+        if "analysis" in self.vcon_dict:
+            if not isinstance(self.vcon_dict["analysis"], list):
+                errors.append("analysis must be a list")
+            else:
+                for i, analysis in enumerate(self.vcon_dict["analysis"]):
+                    if not isinstance(analysis, dict):
+                        errors.append(f"Analysis at index {i} must be a dictionary")
+                    else:
+                        # Required analysis fields
+                        analysis_required = [
+                            "type",
+                            "dialog",
+                            "vendor",
+                            "body",
+                            "encoding",
+                        ]
+                        for field in analysis_required:
+                            if field not in analysis:
+                                errors.append(
+                                    f"Analysis at index {i} missing required field: {field}"
+                                )
+
+                        # Validate encoding
+                        if "encoding" in analysis and analysis["encoding"] not in [
+                            "json",
+                            "none",
+                            "base64url",
+                        ]:
+                            errors.append(
+                                f"Analysis at index {i} has invalid encoding: {analysis['encoding']}"
+                            )
+
+                        # Validate dialog references
+                        if "dialog" in analysis:
+                            dialog_count = len(self.vcon_dict.get("dialog", []))
+                            if isinstance(analysis["dialog"], list):
+                                for dialog_idx in analysis["dialog"]:
+                                    if (
+                                        not isinstance(dialog_idx, int)
+                                        or dialog_idx < 0
+                                        or dialog_idx >= dialog_count
+                                    ):
+                                        errors.append(
+                                            f"Analysis at index {i} references invalid dialog index: {dialog_idx}"
+                                        )
+                            elif isinstance(analysis["dialog"], int):
+                                if (
+                                    analysis["dialog"] < 0
+                                    or analysis["dialog"] >= dialog_count
+                                ):
+                                    errors.append(
+                                        f"Analysis at index {i} references invalid dialog index: {analysis['dialog']}"
+                                    )
+                            else:
+                                errors.append(
+                                    f"Analysis at index {i} has invalid dialog reference type"
+                                )
+
+        return len(errors) == 0, errors
+
+    @staticmethod
+    def validate_file(file_path: str) -> tuple[bool, list[str]]:
+        """
+        Validate a vCon file at the given path.
+
+        :param file_path: Path to the vCon JSON file
+        :type file_path: str
+        :return: A tuple containing (is_valid, list_of_errors)
+        :rtype: tuple[bool, list[str]]
+        """
+        try:
+            with open(file_path, "r") as f:
+                json_str = f.read()
+            return Vcon.validate_json(json_str)
+        except FileNotFoundError:
+            return False, ["File not found"]
+        except json.JSONDecodeError:
+            return False, ["Invalid JSON format"]
+        except Exception as e:
+            return False, [f"Error reading file: {str(e)}"]
+
+    @staticmethod
+    def validate_json(json_str: str) -> tuple[bool, list[str]]:
+        """
+        Validate a vCon from a JSON string.
+
+        :param json_str: JSON string representing a vCon
+        :type json_str: str
+        :return: A tuple containing (is_valid, list_of_errors)
+        :rtype: tuple[bool, list[str]]
+        """
+        try:
+            vcon = Vcon.build_from_json(json_str)
+            return vcon.is_valid()
+        except json.JSONDecodeError:
+            return False, ["Invalid JSON format"]
+        except Exception as e:
+            return False, [f"Error parsing vCon: {str(e)}"]

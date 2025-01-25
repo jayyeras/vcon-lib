@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vcon"
-version = "0.3.9"
+version = "0.3.10"
 description = "The vCon library"
 authors = ["Thomas McCarthy-Howe <ghostofbasho@gmail.com>"]
 license = "MIT"
@@ -35,6 +35,8 @@ mutagen = "^1.47.0"
 pytest = "^8.3.4"
 requests = "^2.32.3"
 mutagen = "^1.47.0"
+sphinx = "<7.0.0"
+sphinx-rtd-theme = "^3.0.2"
 
 [build-system]
 requires = ["poetry-core"]

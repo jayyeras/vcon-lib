@@ -15,11 +15,22 @@ MIME_TYPES = [
     "video/x-mp4",
     "video/ogg",
     "multipart/mixed",
-    "message/external-body",
 ]
 
 
 class Dialog:
+    MIME_TYPES = [
+        "audio/wav",
+        "audio/x-wav",
+        "audio/wave",
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/ogg",
+        "audio/webm",
+        "audio/x-m4a",
+        "audio/aac",
+    ]
+
     def __init__(
         self,
         type: str,
