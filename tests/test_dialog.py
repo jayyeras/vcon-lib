@@ -2,6 +2,9 @@ import pytest
 from src.vcon.dialog import Dialog
 import hashlib
 import base64
+import requests
+from unittest.mock import Mock, patch
+from datetime import datetime
 
 
 class TestDialog:
@@ -346,7 +349,7 @@ class TestDialog:
             Dialog(type="text", start="invalid-datetime", parties=[1, 2, 3])
 
     # Converts start time to ISO 8601 string if provided as datetime
-    def test_convert_start_time_to_iso_string(self):
+    def test_convert_datetime_to_iso_string(self):
         from datetime import datetime
         from src.vcon.dialog import Dialog
         from unittest.mock import patch
@@ -365,7 +368,7 @@ class TestDialog:
         assert dialog.start == "2022-09-15T10:30:00"
 
     # Converts start time to ISO 8601 string if provided as string
-    def test_convert_start_time_to_iso_string(self):
+    def test_convert_string_to_iso_string(self):
         from datetime import datetime
         from src.vcon.dialog import Dialog
         from unittest.mock import patch
@@ -379,3 +382,63 @@ class TestDialog:
             dialog = Dialog(type="text", start=start_time, parties=[1, 2, 3])
 
             assert dialog.start == expected_iso_time
+
+    def test_to_inline_data_binary(self):
+        # Create some fake binary audio data
+        fake_binary_data = (
+            b"\x52\x49\x46\x46\x24\x08\x00\x00\x57\x41\x56\x45"  # WAV header snippet
+        )
+
+        # Mock the requests.get response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = fake_binary_data
+        mock_response.headers = {"Content-Type": "audio/x-wav"}
+
+        # Create a dialog with external data
+        dialog = Dialog(
+            type="audio",
+            start=datetime.now(),
+            parties=[1, 2],
+            url="http://example.com/audio.wav",
+        )
+
+        # Mock the requests.get call
+        with patch("requests.get", return_value=mock_response):
+            dialog.to_inline_data()
+
+        # Verify the conversion was successful
+        assert not hasattr(dialog, "url")  # URL should be removed
+        assert dialog.mimetype == "audio/x-wav"
+        assert dialog.filename == "audio.wav"
+        assert dialog.encoding == "base64url"
+        assert dialog.alg == "sha256"
+
+        # Decode the base64url body and verify it matches original content
+        decoded_body = base64.urlsafe_b64decode(dialog.body.encode())
+        assert decoded_body == fake_binary_data
+
+        # Verify the signature matches the content
+        expected_signature = base64.urlsafe_b64encode(
+            hashlib.sha256(fake_binary_data).digest()
+        ).decode()
+        assert dialog.signature == expected_signature
+
+    def test_to_inline_data_failed_request(self):
+        # Create a dialog with external data
+        dialog = Dialog(
+            type="audio",
+            start=datetime.now(),
+            parties=[1, 2],
+            url="http://example.com/audio.wav",
+        )
+
+        # Mock a failed request
+        mock_response = Mock()
+        mock_response.status_code = 404
+
+        # Verify that the conversion raises an exception
+        with patch("requests.get", return_value=mock_response):
+            with pytest.raises(Exception) as exc_info:
+                dialog.to_inline_data()
+            assert "Failed to fetch external data: 404" in str(exc_info.value)

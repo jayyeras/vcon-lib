@@ -156,13 +156,15 @@ class Dialog:
         else:
             raise Exception(f"Failed to fetch external data: {response.status_code}")
 
-        # Overide the filename if provided, otherwise use the filename from the URL
+        # Override the filename if provided, otherwise use the filename from the URL
         if filename:
             self.filename = filename
         else:
-            self.filename = url.split("/")[-1]
+            # Extract filename from URL, removing any query parameters
+            url_path = url.split("?")[0]
+            self.filename = url_path.split("/")[-1]
 
-        # Overide the mimetype if provided, otherwise use the mimetype from the URL
+        # Override the mimetype if provided, otherwise use the mimetype from the URL
         if mimetype:
             self.mimetype = mimetype
 
@@ -282,30 +284,33 @@ class Dialog:
         :return: None
         :rtype: None
         """
+        # Ensure filename attribute exists
+        if not hasattr(self, "filename"):
+            self.filename = None
+
         # Read the contents from the URL
         response = requests.get(self.url)
         if response.status_code == 200:
-            self.body = response.text
-            self.mimetype = response.headers["Content-Type"]
+            # For binary content, use response.content instead of response.text
+            raw_content = response.content
+            # Base64url encode the body
+            self.body = base64.urlsafe_b64encode(raw_content).decode()
+            self.mimetype = response.headers.get("Content-Type")
         else:
             raise Exception(f"Failed to fetch external data: {response.status_code}")
 
-        # Calculate the SHA-256 hash of the body as the signature
+        # Calculate the SHA-256 hash of the original binary content
         self.alg = "sha256"
         self.encoding = "base64url"
         self.signature = base64.urlsafe_b64encode(
-            hashlib.sha256(self.body.encode()).digest()
+            hashlib.sha256(raw_content).digest()
         ).decode()
 
-        # Overide the filename if provided, otherwise use the filename from the URL
-        if self.filename:
-            self.filename = self.filename
-        else:
-            self.filename = self.url.split("/")[-1]
+        # Set the filename if not already provided
+        if not self.filename:
+            # Extract filename from URL, removing any query parameters
+            url_path = self.url.split("?")[0]
+            self.filename = url_path.split("/")[-1]
 
-        # Overide the mimetype if provided, otherwise use the mimetype from the URL
-        if self.mimetype:
-            self.mimetype = self.mimetype
-
-        # Add the body to the dialog
-        self.add_inline_data(self.body, self.filename, self.mimetype)
+        # Remove the url since this is now inline data
+        delattr(self, "url")
