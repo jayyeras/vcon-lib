@@ -413,7 +413,8 @@ class Vcon:
         uuid_int |= custom_c_62_bits
 
         uuid_str = str(uuid6.UUID(int=uuid_int, version=7))
-        assert uuid_str[14] == "7"
+        if uuid_str[14] != "7":
+            raise AssertionError("Expected '7' at position 14 in UUID string")
         uuid_str = uuid_str[:14] + "8" + uuid_str[15:]
 
         return uuid_str
