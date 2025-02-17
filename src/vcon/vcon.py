@@ -673,6 +673,8 @@ class Vcon:
         :rtype: tuple[bool, list[str]]
         """
         try:
+            if "../" in file_path or "..\\" in file_path:
+                raise Exception("Invalid file path")
             with open(file_path, "r") as f:
                 json_str = f.read()
             return Vcon.validate_json(json_str)

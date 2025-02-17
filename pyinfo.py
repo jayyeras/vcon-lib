@@ -13,6 +13,8 @@ def find_package_link(package_name):
     for path in site.getsitepackages():
         egg_link = os.path.join(path, f"{package_name}.egg-link")
         if os.path.exists(egg_link):
+            if "../" in egg_link or "..\\" in egg_link:
+                raise Exception("Invalid file path")
             with open(egg_link, "r") as f:
                 return f.read().strip()
     return None
