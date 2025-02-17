@@ -1,0 +1,182 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usage Guide &mdash; vcon 0.3.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="vcon" href="api/modules.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            vcon
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#creating-a-vcon-container">Creating a vCon Container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-a-vcon-container">Reading a vCon Container</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#working-with-media-files">Working with Media Files</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">vcon</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vcon</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Usage Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="usage-guide">
+<h1>Usage Guide<a class="headerlink" href="#usage-guide" title="Permalink to this heading"></a></h1>
+<p>This guide will help you get started with using the vcon library.</p>
+<section id="basic-usage">
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this heading"></a></h2>
+<section id="creating-a-vcon-container">
+<h3>Creating a vCon Container<a class="headerlink" href="#creating-a-vcon-container" title="Permalink to this heading"></a></h3>
+<p>Here’s a simple example of creating a vCon container:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vcon</span><span class="w"> </span><span class="kn">import</span> <span class="n">VCon</span>
+
+<span class="c1"># Create a new vCon container</span>
+<span class="n">vcon</span> <span class="o">=</span> <span class="n">VCon</span><span class="p">()</span>
+
+<span class="c1"># Set basic metadata</span>
+<span class="n">vcon</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;My Video Conference&quot;</span><span class="p">)</span>
+<span class="n">vcon</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s2">&quot;An important meeting&quot;</span><span class="p">)</span>
+
+<span class="c1"># Add participants</span>
+<span class="n">vcon</span><span class="o">.</span><span class="n">add_participant</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;John Doe&quot;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">&quot;john@example.com&quot;</span><span class="p">)</span>
+
+<span class="c1"># Save the container</span>
+<span class="n">vcon</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;my_conference.vcon&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="reading-a-vcon-container">
+<h3>Reading a vCon Container<a class="headerlink" href="#reading-a-vcon-container" title="Permalink to this heading"></a></h3>
+<p>To read an existing vCon container:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vcon</span><span class="w"> </span><span class="kn">import</span> <span class="n">VCon</span>
+
+<span class="c1"># Load a vCon container</span>
+<span class="n">vcon</span> <span class="o">=</span> <span class="n">VCon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_conference.vcon&quot;</span><span class="p">)</span>
+
+<span class="c1"># Access metadata</span>
+<span class="n">title</span> <span class="o">=</span> <span class="n">vcon</span><span class="o">.</span><span class="n">get_title</span><span class="p">()</span>
+<span class="n">description</span> <span class="o">=</span> <span class="n">vcon</span><span class="o">.</span><span class="n">get_description</span><span class="p">()</span>
+
+<span class="c1"># Get participants</span>
+<span class="n">participants</span> <span class="o">=</span> <span class="n">vcon</span><span class="o">.</span><span class="n">get_participants</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permalink to this heading"></a></h2>
+<section id="working-with-media-files">
+<h3>Working with Media Files<a class="headerlink" href="#working-with-media-files" title="Permalink to this heading"></a></h3>
+<p>You can attach and manage media files in a vCon container:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">vcon</span><span class="w"> </span><span class="kn">import</span> <span class="n">VCon</span>
+
+<span class="n">vcon</span> <span class="o">=</span> <span class="n">VCon</span><span class="p">()</span>
+
+<span class="c1"># Add a video recording</span>
+<span class="n">vcon</span><span class="o">.</span><span class="n">add_media</span><span class="p">(</span><span class="s2">&quot;recording.mp4&quot;</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;video/mp4&quot;</span><span class="p">)</span>
+
+<span class="c1"># Add a transcript</span>
+<span class="n">vcon</span><span class="o">.</span><span class="n">add_media</span><span class="p">(</span><span class="s2">&quot;transcript.txt&quot;</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/plain&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more detailed information about the API, please refer to the <span class="xref std std-ref">api-reference</span> section.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api/modules.html" class="btn btn-neutral float-right" title="vcon" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Thomas McCarthy-Howe.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
